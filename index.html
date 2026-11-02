@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Knight</title>
+<style>
+:root{--bg:#f3f2ef;--fg:#1d1d1f;--mut:#86868b;--lt:#ede8dc;--dk:#c4c2bb;--red:#a81f2b;--cur:#74101a;--card:rgba(255,255,255,.72);--line:rgba(0,0,0,.09);--kn:#fffaf0;--s:260px;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#151516;--fg:#f2f1ee;--mut:#8e8e93;--lt:#d8d3c7;--dk:#6b6b70;--red:#b32436;--cur:#7f1020;--card:rgba(44,44,46,.7);--line:rgba(255,255,255,.1);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#151516;--fg:#f2f1ee;--mut:#8e8e93;--lt:#d8d3c7;--dk:#6b6b70;--red:#b32436;--cur:#7f1020;--card:rgba(44,44,46,.7);--line:rgba(255,255,255,.1);color-scheme:dark}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Inter,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+main{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:20px 16px}
+body.home{--s:clamp(230px,min(88vw,100svh - 400px),520px)}
+body.game{--s:clamp(260px,min(94vw,100svh - 260px),640px)}
+.fade{animation:in .5s cubic-bezier(.2,.7,.2,1) both}
+@keyframes in{from{opacity:0;transform:translateY(8px)}}
+[hidden]{display:none!important}
+#hero{text-align:center;max-width:640px}
+h1{font-size:clamp(32px,6.4vw,62px);line-height:1.05;font-weight:650;letter-spacing:-.035em}
+#hero p{margin:14px auto 0;color:var(--mut);font-size:clamp(16px,2.2vw,20px);line-height:1.45;max-width:30ch}
+.btns{margin-top:24px;display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+button:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+.pri{background:var(--fg);color:var(--bg);padding:14px 30px;border-radius:980px;font-size:17px;font-weight:600;transition:transform .15s,opacity .2s}
+.pri:hover{opacity:.88}.pri:active{transform:scale(.97)}
+.ghost{padding:14px 18px;color:var(--mut);font-size:16px;transition:color .2s}.ghost:hover{color:var(--fg)}
+#meta{display:block;margin-top:14px;color:var(--mut);font-size:13px;min-height:1.2em}
+#hud{width:var(--s);transition:width .5s}
+.row{display:flex;justify-content:space-between;align-items:center;color:var(--mut);font-size:14px}
+.back{color:var(--mut);padding:4px 0}.back:hover{color:var(--fg)}
+.big{display:flex;align-items:baseline;gap:6px;margin-top:6px}
+#n{font-size:44px;font-weight:650;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+#n.pop{animation:pop .3s ease}
+@keyframes pop{40%{transform:scale(1.08);color:var(--red)}}
+.big span{color:var(--mut);font-size:20px}
+.bar{height:4px;border-radius:2px;background:var(--line);margin:8px 0 10px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--red);border-radius:2px;transition:width .45s cubic-bezier(.2,.7,.2,1)}
+#stats{font-size:14px;color:var(--mut);font-variant-numeric:tabular-nums;display:flex;justify-content:space-between;gap:8px;min-height:1.3em}
+.bw{position:relative;width:var(--s);height:var(--s);transition:width .5s cubic-bezier(.2,.7,.2,1),height .5s cubic-bezier(.2,.7,.2,1)}
+#board{position:absolute;inset:0;display:grid;grid-template-columns:repeat(8,1fr);border-radius:14px;overflow:hidden;font-size:calc(var(--s)/8);box-shadow:0 28px 60px -22px rgba(0,0,0,.4),0 2px 8px rgba(0,0,0,.12);touch-action:manipulation}
+body.home #board{pointer-events:none}
+.sq{position:relative;isolation:isolate;display:grid;place-items:center;aspect-ratio:1;border:0;border-radius:0;font-size:.2em;font-weight:600;color:rgba(255,255,255,.55);font-variant-numeric:tabular-nums;transition:filter .15s}
+.lt{background:var(--lt)}.dk{background:var(--dk)}
+.sq::before{content:"";position:absolute;inset:0;z-index:-1;background:var(--red);opacity:0}
+.sq.v::before{opacity:1;animation:fill .5s cubic-bezier(.2,.7,.2,1)}
+@keyframes fill{from{clip-path:circle(0% at 50% 50%)}to{clip-path:circle(80% at 50% 50%)}}
+.sq.cur::before{background:var(--cur)}
+.sq.cur{color:transparent}
+.sq.leg{cursor:pointer}.sq.leg::after{content:"";width:26%;height:26%;border-radius:50%;background:var(--fg);opacity:.22;transition:transform .15s,opacity .15s}
+.sq.leg:hover::after{transform:scale(1.35);opacity:.4}.sq.leg:active{filter:brightness(.92)}
+.sq.hint{animation:hint 1s ease-in-out 2}
+@keyframes hint{50%{box-shadow:inset 0 0 0 .08em var(--red);filter:brightness(1.12)}}
+.pick .sq{cursor:pointer}.pick .sq:hover{filter:brightness(.93)}
+.pick .sq:hover::after{content:"\265E\FE0E";font-size:3.5em;color:var(--fg);opacity:.25}
+.sq.no{animation:no .3s}
+@keyframes no{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+.sq.wave{animation:wave .7s ease both;z-index:2}
+@keyframes wave{50%{transform:scale(1.14);filter:brightness(1.3)}}
+.knight{position:absolute;left:0;top:0;width:12.5%;height:12.5%;display:grid;place-items:center;pointer-events:none;opacity:0;transition:transform .36s cubic-bezier(.45,.05,.25,1),opacity .2s;z-index:3}
+.knight span{display:block;line-height:1;font-size:calc(var(--s)/8*.82);color:var(--kn);text-shadow:0 2px 5px rgba(0,0,0,.5);font-family:"Apple Symbols","Segoe UI Symbol","DejaVu Sans",serif}
+#ov{position:absolute;inset:0;z-index:5;display:grid;place-items:center;border-radius:14px;background:color-mix(in srgb,var(--bg) 45%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);padding:16px}
+.card{text-align:center;max-width:300px}
+.card h2{font-size:clamp(22px,4.4vw,30px);font-weight:650;letter-spacing:-.02em}
+.card h2.caps{letter-spacing:.06em;font-size:clamp(18px,3.6vw,24px)}
+.card p{margin-top:8px;color:var(--mut);font-size:15px;line-height:1.45}
+.card .btns{margin-top:18px;gap:6px}
+.card .pri{padding:11px 22px;font-size:15px}.card .ghost{padding:11px 12px;font-size:15px}
+#ctrl{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:var(--s);min-width:min(var(--s),92vw)}
+.pill{height:36px;padding:0 14px;border-radius:18px;background:var(--card);border:1px solid var(--line);font-size:14px;transition:transform .12s,opacity .2s,border-color .2s;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.pill:hover{border-color:var(--mut)}.pill:active{transform:scale(.95)}.pill:disabled{opacity:.35;pointer-events:none}
+.pill[aria-pressed="true"]{border-color:var(--red)}
+#toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,30px);opacity:0;background:var(--fg);color:var(--bg);padding:11px 18px;border-radius:14px;font-size:14px;transition:.4s cubic-bezier(.2,.7,.2,1);pointer-events:none;z-index:9;text-align:center}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body class="home">
+<main>
+  <section id="hero" class="fade">
+    <h1>64 Squares. One Knight. One Journey.</h1>
+    <p>Explore the board. Master the movement. Leave no square untouched.</p>
+    <div class="btns"><button class="pri" id="go">Start Playing</button><button class="ghost" id="daily">Daily challenge</button></div>
+    <small id="meta"></small>
+  </section>
+  <section id="hud" hidden>
+    <div class="row"><button class="back" id="home">‹ Home</button><span id="mode"></span></div>
+    <div class="big"><b id="n">0</b><span>/ 64</span></div>
+    <div class="bar"><i id="bar"></i></div>
+    <div id="stats"></div>
+  </section>
+  <div class="bw">
+    <div id="board" aria-label="Chessboard"></div>
+    <div id="ov" hidden><div class="card fade" id="card"></div></div>
+  </div>
+  <section id="ctrl" hidden>
+    <button class="pill" id="undo">Undo</button>
+    <button class="pill" id="hintb">Hint</button>
+    <button class="pill" id="restart">Restart</button>
+    <button class="pill" id="newg">New game</button>
+    <button class="pill" id="guides" aria-pressed="true">Guides on</button>
+    <button class="pill" id="snd" aria-pressed="false">Sound off</button>
+  </section>
+</main>
+<div id="toast" role="status"></div>
+<script>
+const $=s=>document.querySelector(s);
+const DIRS=[[1,2],[2,1],[-1,2],[-2,1],[1,-2],[2,-1],[-1,-2],[-2,-1]];
+const nb=i=>{const r=i>>3,c=i&7,o=[];for(const[a,b]of DIRS){const x=r+a,y=c+b;if(x>=0&&x<8&&y>=0&&y<8)o.push(x*8+y)}return o};
+const name=i=>"abcdefgh"[i&7]+(8-(i>>3));
+const ls={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const fmt=ms=>{const s=Math.floor(ms/1e3);return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")};
+
+/* ---------- board ---------- */
+const B=$("#board"),sq=[];
+for(let i=0;i<64;i++){const b=document.createElement("button");b.className="sq "+((((i>>3)+(i&7))%2)?"dk":"lt");b.setAttribute("aria-label",name(i));b.dataset.i=i;B.appendChild(b);sq.push(b)}
+const K=document.createElement("div");K.className="knight";K.innerHTML="<span>\u265E\uFE0E</span>";B.appendChild(K);
+
+/* ---------- state ---------- */
+let mode="home",S,sound=false,ach=ls.get("knight.ach",{}),best=ls.get("knight.best",null),timer=0,demoT=0,hintT=0;
+function fresh(m){S={path:[],ord:Array(64).fill(0),el:0,t0:0,over:false,hint:-1,guides:S?S.guides:true,kind:m||"free"}}
+fresh();
+const legal=c=>nb(c).filter(i=>!S.ord[i]);
+const cur=()=>S.path.length?S.path[S.path.length-1]:-1;
+
+/* ---------- sound ---------- */
+let AC;
+function tone(f,d,t="sine",v=.06,at=0){if(!sound)return;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain(),s=AC.currentTime+at;o.type=t;o.frequency.value=f;g.gain.setValueAtTime(v,s);g.gain.exponentialRampToValueAtTime(.0001,s+d);o.connect(g);g.connect(AC.destination);o.start(s);o.stop(s+d)}catch(e){}}
+const sClick=()=>tone(520,.07,"sine",.04),sLand=()=>tone(190,.14,"triangle",.1,.2),sRed=()=>tone(880,.22,"sine",.035,.28),sWin=()=>[523,659,784,1047].forEach((f,i)=>tone(f,.9,"sine",.06,i*.14)),sDead=()=>{tone(220,.3,"triangle",.07);tone(165,.5,"triangle",.07,.18)};
+
+/* ---------- render ---------- */
+function render(skip=-1){
+  const c=cur(),leg=(c>=0&&!S.over&&mode==="play"&&S.guides)?legal(c):[];
+  sq.forEach((e,i)=>{const o=S.ord[i],show=o&&i!==skip;
+    e.classList.toggle("v",!!show);e.classList.toggle("cur",i===c);
+    e.classList.toggle("leg",leg.includes(i));e.classList.toggle("hint",i===S.hint);
+    const t=show?String(o):"";if(e.textContent!==t)e.textContent=t});
+  B.classList.toggle("pick",mode==="play"&&!S.path.length);
+}
+function hud(){
+  const n=S.path.length,el=$("#n");
+  if(el.textContent!=String(n)){el.textContent=n;el.classList.remove("pop");void el.offsetWidth;el.classList.add("pop")}
+  $("#bar").style.width=n/64*100+"%";
+  $("#stats").innerHTML=n?`<span>${64-n} left</span><span>${Math.max(0,n-1)} moves</span><span id="tm">${fmt(S.el)}</span>`:"<span>Choose where the knight begins.</span>";
+  $("#undo").disabled=n<2||S.over===true;
+  $("#hintb").disabled=!n||!!S.over;
+  $("#restart").disabled=!n;
+  $("#mode").textContent=S.kind==="daily"?"Daily · "+new Date().toLocaleDateString(undefined,{month:"short",day:"numeric"}):"Free play";
+}
+function placeK(i,hop){
+  K.style.transform=`translate(${(i&7)*100}%,${(i>>3)*100}%)`;K.style.opacity=1;
+  if(hop&&!matchMedia("(prefers-reduced-motion:reduce)").matches)K.firstChild.animate([{transform:"translateY(0) scale(1)"},{transform:"translateY(-42%) scale(1.3)"},{transform:"translateY(0) scale(1)"}],{duration:360,easing:"cubic-bezier(.4,0,.6,1)"});
+}
+
+/* ---------- game logic ---------- */
+function push(i,hop){
+  S.path.push(i);const n=S.path.length;S.ord[i]=n;
+  placeK(i,hop);render(hop?i:-1);
+  setTimeout(()=>{if(S.ord[i]===n){sq[i].classList.add("v");sq[i].textContent=n}},hop?270:0);
+  if(mode!=="play"){return}
+  if(n===2){S.t0=performance.now();clearInterval(timer);timer=setInterval(tick,250)}
+  if(hop){sClick();sLand();sRed()}else sClick();
+  hud();check();
+}
+function tick(){if(S.over||S.path.length<2)return;S.el=performance.now()-S.t0;const t=$("#tm");if(t)t.textContent=fmt(S.el)}
+function check(){
+  const n=S.path.length;
+  if(n>=10)unlock("first");if(n>=32)unlock("half");
+  if(n===64)return win();
+  if(n>1&&!legal(cur()).length){S.over="dead";setTimeout(()=>{if(S.over==="dead"){sDead();overlay("No moves left",`The knight is stuck after covering ${n} of 64 squares.`,[["Undo move",undo,1],["Try again",restart],["New start",newGame]])}},550)}
+}
+function move(i){S.hint=-1;push(i,true)}
+function undo(){
+  if(S.path.length<2||S.over===true)return;
+  const l=S.path.pop();S.ord[l]=0;S.over=false;S.hint=-1;$("#ov").hidden=true;
+  if(S.path.length<2){clearInterval(timer);S.el=0}
+  placeK(cur(),true);render();hud();sClick();
+}
+function restart(){const s=S.path[0];const k=S.kind,g=S.guides;clearInterval(timer);$("#ov").hidden=true;fresh(k);S.guides=g;clearAll();hud();if(s>=0&&s!=null)setTimeout(()=>{if(!S.path.length)push(s,false)},250)}
+function newGame(){const k=S.kind,g=S.guides;clearInterval(timer);$("#ov").hidden=true;fresh(k==="daily"?"free":k);S.guides=g;clearAll();hud()}
+function clearAll(){K.style.opacity=0;sq.forEach(e=>{e.classList.remove("v","cur","leg","hint");e.textContent=""});render()}
+function hint(){
+  const c=cur();if(c<0||S.over)return;
+  let b=-1,bd=9;for(const j of legal(c)){const d=nb(j).filter(i=>!S.ord[i]).length;if(d<bd){bd=d;b=j}}
+  if(b<0)return;S.hint=b;render();sClick();clearTimeout(hintT);hintT=setTimeout(()=>{S.hint=-1;render()},2200);
+}
+function win(){
+  S.over=true;clearInterval(timer);S.el=performance.now()-S.t0;
+  const t=S.el;let rec=false;
+  if(S.kind==="free"&&(best==null||t<best)){best=t;ls.set("knight.best",t);rec=true}
+  if(S.kind==="daily")ls.set("knight.daily",{k:dayKey(),t});
+  unlock("full");if(t<3e5)unlock("swift");
+  sq.forEach((e,i)=>{e.style.animationDelay=((i>>3)+(i&7))*45+"ms";e.classList.add("wave")});
+  setTimeout(()=>sq.forEach(e=>{e.classList.remove("wave");e.style.animationDelay=""}),1800);
+  sWin();
+  setTimeout(()=>overlay("A PERFECT JOURNEY.",`${fmt(t)} · 63 moves${rec?" · New best":best!=null&&S.kind==="free"?" · Best "+fmt(best):""}`,[["Play again",newGame,1],["Home",goHome]],true),1200);
+}
+function overlay(title,sub,btns,caps){
+  const c=$("#card");c.innerHTML=`<h2 class="${caps?"caps":""}"></h2><p></p><div class="btns"></div>`;
+  c.querySelector("h2").textContent=title;c.querySelector("p").textContent=sub;
+  btns.forEach(([t,f,p])=>{const b=document.createElement("button");b.className=p?"pri":"ghost";b.textContent=t;b.onclick=f;c.querySelector(".btns").appendChild(b)});
+  $("#ov").hidden=false;
+}
+const A={first:["First steps","Covered 10 squares"],half:["Halfway there","32 squares covered"],full:["A perfect journey","Completed the tour"],swift:["Swift knight","Finished in under 5 minutes"]};
+function unlock(k){if(ach[k])return;ach[k]=1;ls.set("knight.ach",ach);toast("Achievement unlocked: "+A[k][0]+" — "+A[k][1])}
+let toastT;function toast(t){const e=$("#toast");e.textContent=t;e.classList.add("on");clearTimeout(toastT);toastT=setTimeout(()=>e.classList.remove("on"),2800)}
+
+/* ---------- demo (landing) ---------- */
+function tour(s){const o=Array(64).fill(0),p=[s];o[s]=1;let c=s;while(p.length<64){const l=nb(c).filter(i=>!o[i]);if(!l.length)break;let b=l[0],bd=9;for(const j of l){const d=nb(j).filter(i=>!o[i]).length;if(d<bd){bd=d;b=j}}p.push(b);o[b]=1;c=b}return p}
+function demo(){
+  clearTimeout(demoT);fresh();clearAll();
+  const p=tour([0,7,56,63][Math.floor(Math.random()*4)]);let k=0;
+  const step=()=>{if(mode!=="home")return;if(k<p.length){push(p[k],k>0);k++;demoT=setTimeout(step,k===1?700:190)}else demoT=setTimeout(demo,2600)};
+  demoT=setTimeout(step,500);
+}
+function meta(){
+  const d=ls.get("knight.daily",null),n=Object.keys(ach).length,p=[];
+  if(best!=null)p.push("Best "+fmt(best));if(d&&d.k===dayKey())p.push("Daily done "+fmt(d.t));p.push(n+" of 4 achievements");
+  $("#meta").textContent=p.join("  ·  ");
+}
+
+/* ---------- flow ---------- */
+function dayKey(){const d=new Date();return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate()}
+function view(m){
+  mode=m;document.body.className=m==="home"?"home":"game";
+  $("#hero").hidden=m!=="home";$("#hud").hidden=$("#ctrl").hidden=m==="home";
+  [$("#hud"),$("#ctrl"),$("#hero")].forEach(e=>{e.classList.remove("fade");void e.offsetWidth;e.classList.add("fade")});
+}
+function startGame(kind){
+  clearTimeout(demoT);clearInterval(timer);$("#ov").hidden=true;
+  const g=S.guides;fresh(kind);S.guides=g;clearAll();view("play");hud();
+  if(kind==="daily"){const s=(Math.imul(dayKey(),2654435761)>>>10)%64;setTimeout(()=>{if(!S.path.length&&mode==="play")push(s,false)},500)}
+}
+function goHome(){clearInterval(timer);$("#ov").hidden=true;view("home");meta();demo()}
+B.addEventListener("click",e=>{
+  const b=e.target.closest(".sq");if(!b||mode!=="play"||S.over)return;
+  const i=+b.dataset.i,c=cur();
+  if(c<0){if(S.kind==="free")push(i,false)}
+  else if(legal(c).includes(i))move(i);
+  else{b.classList.remove("no");void b.offsetWidth;b.classList.add("no")}
+});
+$("#go").onclick=()=>startGame("free");
+$("#daily").onclick=()=>startGame("daily");
+$("#home").onclick=goHome;
+$("#undo").onclick=undo;$("#hintb").onclick=hint;$("#restart").onclick=restart;$("#newg").onclick=newGame;
+$("#guides").onclick=e=>{S.guides=!S.guides;e.currentTarget.setAttribute("aria-pressed",S.guides);e.currentTarget.textContent="Guides "+(S.guides?"on":"off");render()};
+$("#snd").onclick=e=>{sound=!sound;e.currentTarget.setAttribute("aria-pressed",sound);e.currentTarget.textContent="Sound "+(sound?"on":"off");sClick()};
+addEventListener("keydown",e=>{if((e.metaKey||e.ctrlKey)&&e.key==="z"){e.preventDefault();undo()}else if(e.key==="h"&&mode==="play")hint()});
+meta();demo();
+</script>
+</body>
+</html>
